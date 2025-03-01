@@ -8,9 +8,53 @@ namespace SecurityLibrary
 {
     public class RepeatingkeyVigenere : ICryptographicTechnique<string, string>
     {
+        public string smallest_key(string s)
+        {
+            int n = s.Length;
+            Console.WriteLine(s);
+            List<int> z = new List<int>(new int[n]);
+            int l = 0, r = 0;
+
+            for (int i = 1; i < n; i++)
+            {
+                if (i < r)
+                {
+                    z[i] = Math.Min(r - i, z[i - l]);
+                }
+                while (i + z[i] < n && s[z[i]] == s[i + z[i]])
+                {
+                    z[i]++;
+                }
+                if (i + z[i] > r)
+                {
+                    l = i;
+                    r = i + z[i];
+                }
+            }
+            z[0] = n;
+            for (int i = 0; i < n; i++)
+                Console.Write(z[i] + " ");
+            Console.WriteLine();
+            for (int sz = 1; sz <= n; sz++)
+            {
+                bool ok = true;
+                int en = n - sz;
+                for (int j = 0; j < en; j += sz)
+                {
+                    if (z[j] < sz)
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok && (en < n || en + z[en] == n))
+                    return s.Substring(0, sz);
+            }
+            return "";
+        }
         public string Analyse(string plainText, string cipherText)
         {
-            return Decrypt(cipherText, plainText);
+            return smallest_key(Decrypt(cipherText, plainText));
         }
         public string Decrypt(string cipherText, string key)
         {

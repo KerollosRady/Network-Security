@@ -8,9 +8,41 @@ namespace SecurityLibrary
 {
     public class AutokeyVigenere : ICryptographicTechnique<string, string>
     {
+        public string smallest_key(string plainText,string s)
+        {
+            plainText = plainText.ToUpper();
+            int st = plainText.Length;
+            s = plainText + s;
+            int n = s.Length;
+            Console.WriteLine(s);
+            List<int> z = new List<int>(new int[n]);
+            int l = 0, r = 0;
+            for (int i = 1; i < n; i++)
+            {
+                if (i < r)
+                {
+                    z[i] = Math.Min(r - i, z[i - l]);
+                }
+                while (i + z[i] < n && s[z[i]] == s[i + z[i]])
+                {
+                    z[i]++;
+                }
+                if (i + z[i] > r)
+                {
+                    l = i;
+                    r = i + z[i];
+                }
+            }
+            for(int i = st; i < n; i++)
+            {
+                if (z[i] == n-i)
+                    return s.Substring(st,i-st);
+            }
+            return "";
+        }
         public string Analyse(string plainText, string cipherText)
         {
-            return Decrypt(cipherText, plainText);
+            return smallest_key(plainText,Decrypt(cipherText, plainText));
         }
         public string Decrypt(string cipherText, string key)
         {
