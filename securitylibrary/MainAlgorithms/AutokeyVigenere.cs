@@ -14,7 +14,6 @@ namespace SecurityLibrary
             int st = plainText.Length;
             s = plainText + s;
             int n = s.Length;
-            Console.WriteLine(s);
             List<int> z = new List<int>(new int[n]);
             int l = 0, r = 0;
             for (int i = 1; i < n; i++)

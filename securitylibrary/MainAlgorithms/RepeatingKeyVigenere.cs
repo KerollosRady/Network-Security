@@ -11,10 +11,8 @@ namespace SecurityLibrary
         public string smallest_key(string s)
         {
             int n = s.Length;
-            Console.WriteLine(s);
             List<int> z = new List<int>(new int[n]);
             int l = 0, r = 0;
-
             for (int i = 1; i < n; i++)
             {
                 if (i < r)
@@ -32,9 +30,6 @@ namespace SecurityLibrary
                 }
             }
             z[0] = n;
-            for (int i = 0; i < n; i++)
-                Console.Write(z[i] + " ");
-            Console.WriteLine();
             for (int sz = 1; sz <= n; sz++)
             {
                 bool ok = true;
