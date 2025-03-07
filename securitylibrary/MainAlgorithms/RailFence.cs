@@ -34,29 +34,14 @@ namespace SecurityLibrary
                         j = startRow;
                     }
                 }
-                if (valid)
-                {
-                    Console.WriteLine(key);
-                    return key;
-                }
+                if (valid) return key;
             }
             throw new InvalidAnlysisException();
-            // throw new NotImplementedException();
         }
-
         public string Decrypt(string cipherText, int key)
         {
             int w = (cipherText.Length + key - 1) / key;
-            string plainText = "";
-            for (int i = 0; i < w; i++)
-            {
-                for (int j = i; j < cipherText.Length; j+=w)
-                {
-                    plainText += cipherText[j];
-                }
-            }
-            return plainText; //.ToLower();
-            // throw new NotImplementedException();
+            return Encrypt(cipherText, w);
         }
 
         public string Encrypt(string plainText, int key)
@@ -67,8 +52,7 @@ namespace SecurityLibrary
                 for (int j = i; j < plainText.Length; j += key)
                     cipherText += plainText[j];
             }
-            return cipherText; //.ToUpper();
-            // throw new NotImplementedException();
+            return cipherText;
         }
     }
 }

@@ -78,7 +78,6 @@ namespace SecurityLibrary
             string plain = "";
             foreach (char c in plainText) plain += c;
             return plain;
-            // throw new NotImplementedException();
         }
         public string Encrypt(string plainText, List<int> key)
         {
@@ -89,7 +88,6 @@ namespace SecurityLibrary
                 for (int i = col-1; i < plainText.Length; i += pos.Count)
                     cipherText += plainText[i];
             return cipherText;
-            // throw new NotImplementedException();
         }
     }
 }
