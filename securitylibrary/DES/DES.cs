@@ -29,7 +29,7 @@ namespace SecurityLibrary.DES
     public class DES : CryptographicTechnique
     {
         #region constants
-        readonly int[] IP = {
+        readonly uint[] IP = {
             57, 49, 41, 33, 25, 17,  9, 1,
             59, 51, 43, 35, 27, 19, 11, 3,
             61, 53, 45, 37, 29, 21, 13, 5,
@@ -39,7 +39,7 @@ namespace SecurityLibrary.DES
             60, 52, 44, 36, 28, 20, 12, 4,
             62, 54, 46, 38, 30, 22, 14, 6
         };
-        readonly int[] IP_1 = {
+        readonly uint[] IP_1 = {
             39,  7, 47, 15, 55, 23, 63, 31,
             38,  6, 46, 14, 54, 22, 62, 30,
             37,  5, 45, 13, 53, 21, 61, 29,
@@ -49,7 +49,7 @@ namespace SecurityLibrary.DES
             33,  1, 41,  9, 49, 17, 57, 25,
             32,  0, 40,  8, 48, 16, 56, 24
         };
-        readonly int[,,] SBox =
+        readonly uint[,,] SBox =
     {
         {
             {14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7},
@@ -100,13 +100,13 @@ namespace SecurityLibrary.DES
             {2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11}
         }
     };
-        readonly int[] P = {
+        readonly uint[] P = {
             15, 6, 19, 20, 28, 11, 27, 16,
             0, 14, 22, 25, 4, 17, 30, 9,
             1, 7, 23, 13, 31, 26, 2, 8,
             18, 12, 29, 5, 21, 10, 3, 24
         };
-        readonly int[] PC1 = {
+        readonly uint[] PC1 = {
             56, 48, 40, 32, 24, 16,  8,
             0, 57, 49, 41, 33, 25, 17,
             9,  1, 58, 50, 42, 34, 26,
@@ -116,7 +116,7 @@ namespace SecurityLibrary.DES
             13,  5, 60, 52, 44, 36, 28,
             20, 12,  4, 27, 19, 11,  3
         };
-        readonly int[] PC2 =
+        readonly uint[] PC2 =
         {
             13, 16, 10, 23, 0, 4, 2, 27,
             14, 5, 20, 9, 22, 11, 3,
@@ -126,45 +126,45 @@ namespace SecurityLibrary.DES
             33, 52, 45, 41, 42, 28, 35, 31
         };
         #endregion
-        long[] keys = new long[16];
-        long Hexa2Bin(String hexa)
+        ulong[] keys = new ulong[16];
+        ulong Hexa2Bin(String hexa)
         {
-            long res = 0;
+            ulong res = 0;
             return res;
         }
-        String Bin2Hexa(long bin)
+        String Bin2Hexa(ulong bin)
         {
             String res = "";
             return res;
         }
-        long Permute(long bits, ref List<int> p)
+        ulong Permute(ulong bits, ref int[] p)
         {
-            long res = 0;
+            ulong res = 0;
             return res;
         }
-        long Expand(long bits)
+        ulong Expand(ulong bits)
         {
-            long res = 0;
+            ulong res = 0;
             return res;
         }
-        long RevertExpansion(long bits)
+        ulong RevertExpansion(ulong bits)
         {
-            long res = 0;
+            ulong res = 0;
             return res;
         }
-        long F(long bits, long ki)
+        ulong F(ulong bits, ulong ki)
         {
-            long res = 0;
+            ulong res = 0;
             return res;
         }
-        void GenerateKeys(long k)
+        void GenerateKeys(ulong k)
         {
 
         }
-        long Execute(long bits, long k)
+        ulong Execute(ulong bits, ulong k)
         {
             GenerateKeys(k);
-            long res = 0;
+            ulong res = 0;
             return res;
         }
         public override string Decrypt(string cipherText, string key)
