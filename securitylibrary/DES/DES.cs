@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -65,19 +66,22 @@ namespace SecurityLibrary.DES
         readonly int[] PC2 =
         {
             42, 39, 45, 32, 55, 51, 53, 28,
-            41, 50, 35, 46, 33, 44, 52,
+            41, 50, 35, 46, 33, 37, 44,52,
             30, 48, 40, 49, 29, 36, 43, 54,
             15, 4, 25, 19, 9, 1, 26, 16,
             5, 11, 23, 8, 12, 7, 17, 0,
-            22, 3, 10, 14, 13, 27, 20, 24
+            22, 3, 10, 14, 6, 20, 27, 24
         };
 
-
         readonly int[] P = {
-            16, 25, 12, 11, 3, 20, 4, 15,
-            31, 17, 9, 6, 27, 14, 1, 22,
-            30, 24, 8, 18, 0, 5, 29, 23,
-            13, 19, 2, 26, 10, 21, 28, 7
+            16, 25, 12, 11,
+            3, 20, 4, 15,
+            31, 17, 9, 6,
+            27, 14, 1, 22,
+            30, 24, 8, 18,
+            0, 5, 29, 23,
+            13, 19, 2, 26,
+            10, 21, 28, 7
         };
 
         readonly int[,,] SBox =
@@ -134,6 +138,17 @@ namespace SecurityLibrary.DES
         const string hexChars = "0123456789ABCDEF";
         #endregion
         long[] keys = new long[16];
+
+        String Long2Bin(long val)
+        {
+            String res = "";
+            for (int i = 63; i >= 0; i--)
+            {
+                long b = (val >> i) & 1L;
+                res += Convert.ToString(b);
+            }
+            return res;
+        }
         long Hexa2Bin(string hexa)
         {
             // Skip "0x" prefix if present
@@ -184,7 +199,7 @@ namespace SecurityLibrary.DES
         long Permute(long bits, int[] p)
         {
             long res = 0;
-            int n= p.Length;
+            int n = p.Length;
             for (int i = 0; i < n; i++)
             {
                 res <<= 1;
@@ -224,33 +239,59 @@ namespace SecurityLibrary.DES
                 val >>= 3;
                 row |= val & 2;
                 res <<= 4;
-                res = SBox[idx, row, col];
+                res |= SBox[idx, row, col];
             }
             return res;
         }
-        long F(long bits, long ki)
+        long F(long bits, long ki) // 32-bit, 48-bit
         {
-            long res = 0;
-            return res;
+            bits = Expand(bits); // 48-bit
+            bits ^= ki;
+            bits = RevertExpansion(bits); // 32-bit
+            bits = Permute(bits, P);
+            return bits;
         }
         void GenerateKeys(long k)
         {
-
+            long pc1 = Permute(k, PC1) & ((1L << 56) - 1);
+            long d = pc1 & ((1L << 28) - 1);
+            long c = (pc1 - d) >> 28 & ((1L << 28) - 1);
+            for (int i = 0; i < 16; i++)
+            {
+                c = (c >> 27) | (c << 1) & ~(1L << 28);
+                d = (d >> 27) | (d << 1) & ~(1L << 28);
+                if (i != 0 && i != 1 && i != 8 && i != 15)
+                {
+                    c = (c >> 27) | (c << 1) & ~(1L << 28);
+                    d = (d >> 27) | (d << 1) & ~(1L << 28);
+                }
+                keys[i] = Permute(d | (c << 28), PC2);
+            }
         }
-        long Execute(long bits, long k)
+        long Execute(long bits)
         {
-            GenerateKeys(k);
-            long res = 0;
-            return res;
+            bits = Permute(bits, IP);
+            long L = (bits >> 32) & ((1L << 32) - 1);
+            long R = bits & ((1L << 32) - 1);
+            for (int i = 0; i < 16; i++)
+            {
+                long newL = R;
+                R = L ^ F(R, keys[i]);
+                L = newL;
+            }
+            return Permute(L | (R << 32), IP_1);
         }
         public override string Decrypt(string cipherText, string key)
         {
-            throw new NotImplementedException();
+            GenerateKeys(Hexa2Bin(key));
+            Array.Reverse(keys);
+            return Bin2Hexa(Execute(Hexa2Bin(cipherText)));
         }
 
         public override string Encrypt(string plainText, string key)
         {
-            throw new NotImplementedException();
+            GenerateKeys(Hexa2Bin(key));
+            return Bin2Hexa(Execute(Hexa2Bin(plainText)));
         }
     }
 }
