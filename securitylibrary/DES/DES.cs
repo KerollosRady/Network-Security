@@ -29,7 +29,7 @@ namespace SecurityLibrary.DES
     public class DES : CryptographicTechnique
     {
         #region constants
-        readonly uint[] IP = {
+        readonly int[] IP = {
             57, 49, 41, 33, 25, 17,  9, 1,
             59, 51, 43, 35, 27, 19, 11, 3,
             61, 53, 45, 37, 29, 21, 13, 5,
@@ -39,7 +39,7 @@ namespace SecurityLibrary.DES
             60, 52, 44, 36, 28, 20, 12, 4,
             62, 54, 46, 38, 30, 22, 14, 6
         };
-        readonly uint[] IP_1 = {
+        readonly int[] IP_1 = {
             39,  7, 47, 15, 55, 23, 63, 31,
             38,  6, 46, 14, 54, 22, 62, 30,
             37,  5, 45, 13, 53, 21, 61, 29,
@@ -49,7 +49,32 @@ namespace SecurityLibrary.DES
             33,  1, 41,  9, 49, 17, 57, 25,
             32,  0, 40,  8, 48, 16, 56, 24
         };
-        readonly uint[,,] SBox =
+        readonly int[] P = {
+            15, 6, 19, 20, 28, 11, 27, 16,
+            0, 14, 22, 25, 4, 17, 30, 9,
+            1, 7, 23, 13, 31, 26, 2, 8,
+            18, 12, 29, 5, 21, 10, 3, 24
+        };
+        readonly int[] PC1 = {
+            56, 48, 40, 32, 24, 16,  8,
+            0, 57, 49, 41, 33, 25, 17,
+            9,  1, 58, 50, 42, 34, 26,
+            18, 10,  2, 59, 51, 43, 35,
+            62, 54, 46, 38, 30, 22, 14,
+            6, 61, 53, 45, 37, 29, 21,
+            13,  5, 60, 52, 44, 36, 28,
+            20, 12,  4, 27, 19, 11,  3
+        };
+        readonly int[] PC2 =
+        {
+            13, 16, 10, 23, 0, 4, 2, 27,
+            14, 5, 20, 9, 22, 11, 3,
+            25, 7, 15, 6, 26, 19, 12, 1,
+            40, 51, 30, 36, 46, 54, 29, 39,
+            50, 44, 32, 47, 43, 48, 38, 55,
+            33, 52, 45, 41, 42, 28, 35, 31
+        };
+        readonly int[,,] SBox =
     {
         {
             {14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7},
@@ -100,71 +125,92 @@ namespace SecurityLibrary.DES
             {2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11}
         }
     };
-        readonly uint[] P = {
-            15, 6, 19, 20, 28, 11, 27, 16,
-            0, 14, 22, 25, 4, 17, 30, 9,
-            1, 7, 23, 13, 31, 26, 2, 8,
-            18, 12, 29, 5, 21, 10, 3, 24
-        };
-        readonly uint[] PC1 = {
-            56, 48, 40, 32, 24, 16,  8,
-            0, 57, 49, 41, 33, 25, 17,
-            9,  1, 58, 50, 42, 34, 26,
-            18, 10,  2, 59, 51, 43, 35,
-            62, 54, 46, 38, 30, 22, 14,
-            6, 61, 53, 45, 37, 29, 21,
-            13,  5, 60, 52, 44, 36, 28,
-            20, 12,  4, 27, 19, 11,  3
-        };
-        readonly uint[] PC2 =
-        {
-            13, 16, 10, 23, 0, 4, 2, 27,
-            14, 5, 20, 9, 22, 11, 3,
-            25, 7, 15, 6, 26, 19, 12, 1,
-            40, 51, 30, 36, 46, 54, 29, 39,
-            50, 44, 32, 47, 43, 48, 38, 55,
-            33, 52, 45, 41, 42, 28, 35, 31
-        };
+        const string hexChars = "0123456789ABCDEF";
         #endregion
-        ulong[] keys = new ulong[16];
-        ulong Hexa2Bin(String hexa)
+        long[] keys = new long[16];
+        long Hexa2Bin(string hexa)
         {
-            ulong res = 0;
+            // Skip "0x" prefix if present
+            int startIndex = 2;
+            long result = 0;
+            for (int i = startIndex; i < hexa.Length; i++)
+            {
+                char c = hexa[i];
+                uint digit;
+
+                if (c >= '0' && c <= '9')
+                {
+                    digit = (uint)(c - '0');
+                }
+                else if (c >= 'A' && c <= 'F')
+                {
+                    digit = (uint)(c - 'A' + 10);
+                }
+                else if (c >= 'a' && c <= 'f')
+                {
+                    digit = (uint)(c - 'a' + 10);
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid hex character: " + c);
+                }
+
+                result = (result << 4) | digit;
+            }
+
+            return result;
+        }
+        string Bin2Hexa(long bin)
+        {
+            char[] buffer = new char[18]; // 0x + 16 digits
+            // Add prefix
+            buffer[0] = '0';
+            buffer[1] = 'x';
+            // Process each nibble (4 bits) from most significant to least
+            for (int i = 0 , stb = 60; i < 16; i++,stb-=4)
+            {
+                // Get the current nibble (0-15)
+                int nibble = (int)((bin >> stb) & 0xF);
+                buffer[i + 2] = hexChars[nibble];
+            }
+            return new string(buffer);
+        }
+        long Permute(long bits, int[] p)
+        {
+            long res = 0;
+            int n= p.Length;
+            for (int i = 0; i < n; i++)
+            {
+                res <<= 1;
+                res |= (bits >> p[i]) & 1;
+            }
             return res;
         }
-        String Bin2Hexa(ulong bin)
+        long Expand(long bits)
         {
-            String res = "";
+            long res = 0;
+            // 32 -> 48
+            // start = 31,
             return res;
         }
-        ulong Permute(ulong bits, ref int[] p)
+        long RevertExpansion(long bits)
         {
-            ulong res = 0;
+            long res = 0;
             return res;
         }
-        ulong Expand(ulong bits)
+        long F(long bits, long ki)
         {
-            ulong res = 0;
+            long res = 0;
             return res;
         }
-        ulong RevertExpansion(ulong bits)
-        {
-            ulong res = 0;
-            return res;
-        }
-        ulong F(ulong bits, ulong ki)
-        {
-            ulong res = 0;
-            return res;
-        }
-        void GenerateKeys(ulong k)
+        void GenerateKeys(long k)
         {
 
         }
-        ulong Execute(ulong bits, ulong k)
+        long Execute(long bits, long k)
         {
             GenerateKeys(k);
-            ulong res = 0;
+            long res = 0;
             return res;
         }
         public override string Decrypt(string cipherText, string key)
