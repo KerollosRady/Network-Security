@@ -189,13 +189,37 @@ namespace SecurityLibrary.DES
         long Expand(long bits)
         {
             long res = 0;
-            // 32 -> 48
-            // start = 31,
+            // 31-0
+            // add 0-bit to end 
+            bits |= (bits & 1) << 32;
+            // add 31-bit to first
+            bits = (bits>>31)&1|(bits << 1);
+            const int needBits = (1 << 6) - 1;
+            //   1111 0000   1010 1010 1111 0000 1010 1010
+            // 0 1111 [0]000 [1]010 1010 1111 0000 1010 1010 1
+            //        [28]   [24] .. 
+            for (int startBit = 28; startBit>=0; startBit -= 4)
+            {
+                res <<= 6;
+                res|= (bits >> startBit)&needBits;
+            }
             return res;
         }
         long RevertExpansion(long bits)
         {
             long res = 0;
+            const int needBits = (1 << 4) - 1;
+            for (int i=42,idx = 0;i >= 0; i -= 6,idx++)
+            {
+                int val = (int)(bits >>i);
+                int row = val & 1;
+                val >>= 1;
+                int col = val & needBits;
+                val >>= 3;
+                row |= val & 2;
+                res <<= 4;
+                res = SBox[idx, row, col];
+            }
             return res;
         }
         long F(long bits, long ki)
