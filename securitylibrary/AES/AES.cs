@@ -62,6 +62,32 @@ namespace SecurityLibrary.AES
         };
         #endregion
 
+        byte[,] Hexa2State(string hexa)
+        {
+            byte[,] state = new byte[4,4];
+            int idx = 2;
+            for (int col = 0; col < 4; col++)
+            {
+                for (int row = 0; row < 4; row++)
+                {
+                    state[col, row] = Convert.ToByte(""+hexa[idx]+hexa[idx+1], 16);
+                    idx += 2;
+                }
+            }
+            return state;
+        }
+        string State2Hexa(byte[,] state)
+        {
+            string hexa = "0x";
+            for (int col = 0; col < 4; col++)
+            {   
+                for (int row = 0; row < 4; row++)
+                {
+                    hexa += state[col, row].ToString("x2");
+                }
+            }
+            return hexa;
+        }
         byte[,] SubBytes(byte[,] input, byte[,] box)
         {
             throw new NotImplementedException();
@@ -79,17 +105,59 @@ namespace SecurityLibrary.AES
 
         byte[,] MixColumns(byte[,] input, byte[,] matrix)
         {
-            throw new NotImplementedException();
+            byte[,] result = new byte[4, 4];
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    for (int k = 0; k < 4; k++)
+                        result[i, j] ^= MultiplyGF(input[i, k], matrix[k, j]);
+
+            return result;
         }
 
         byte[,] AddRoundKey(byte[,] input, byte[,] key)
         {
-            throw new NotImplementedException();
+            byte[,] result = new byte[4, 4];
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    result[i, j] = (byte) (input[i, j] ^ key[i, j]);
+
+            return result;
         }
 
         byte[][,] KeySchedule(byte[,] cipherKey)
         {
-            throw new NotImplementedException();
+            byte[][,] result = new byte[11][,];
+            
+            result[0] = new byte[4, 4];
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    result[0][i, j] = cipherKey[i, j];
+
+            for (int ki = 1; ki <= 10; ki++)
+            {
+                result[ki] = new byte[4, 4];
+                // 1- Rotate
+                byte[,] prevCol = new byte[4, 1];
+                for (int row = 0; row < 3; row++) prevCol[row, 0] = result[ki - 1][row + 1, 3];
+                prevCol[3, 0] = result[ki - 1][0, 3];
+                // 2- SubBytes
+                prevCol = SubBytes(prevCol, SBox);
+                // 3- XOR Rcon
+                prevCol[0, 0] ^= Rcon[ki - 1]; 
+                
+
+                for (int col = 0; col < 4; col++)
+                {
+                    for (int row = 0; row < 4; row++)
+                    {
+                        if (col == 0)
+                            result[ki][row, col] = (byte)(prevCol[row, col] ^ result[ki - 1][row, col]);
+                        else
+                            result[ki][row, col] = (byte)(result[ki][row, col-1] ^ result[ki - 1][row, col]);
+                    }
+                }
+            }
+            return result;
         }
 
         public override string Decrypt(string cipherText, string key)
