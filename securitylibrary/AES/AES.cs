@@ -64,17 +64,44 @@ namespace SecurityLibrary.AES
 
         byte[,] SubBytes(byte[,] input, byte[,] box)
         {
-            throw new NotImplementedException();
+            int m = input.GetLength(1);
+            byte[,] res = new byte[4,m];
+            for(int i=0;i<4;i++)
+               for(int j = 0; j < m; j++)
+                {
+                    byte val = input[i, j];
+                    res[i,j] = box[val & 2, val & 1];
+                }
+            return res;
         }
-
         byte[,] ShiftRows(byte[,] input, byte[] steps)
         {
-            throw new NotImplementedException();
+            byte[,] res = new byte[4, 4];
+            for (int i = 0; i < 4; i++)
+            {
+                byte step = steps[i];
+                for (int j = 0; j < 4; j++)
+                    res[i, (j - step + 4) % 4] = input[i,j];
+            }
+            return res;
         }
-
         byte MultiplyGF(byte a, byte b)
         {
-            throw new NotImplementedException();
+            byte res = a;
+            bool b7 = ((a >> 7) & 1)!=0;
+            byte cnt = 0;
+            // 00011011 = 27;
+            for(byte bt = 1; bt < 8; bt++)
+                if ((b >> bt & 1) == 1)
+                {
+                    byte mul = a;
+                    mul <<= bt;
+                    cnt++;
+                    res ^= mul;
+                }
+            if (b7 && cnt % 2 == 1)
+                res ^= 27;
+            return res;
         }
 
         byte[,] MixColumns(byte[,] input, byte[,] matrix)
