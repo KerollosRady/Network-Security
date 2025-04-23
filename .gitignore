@@ -1,15 +1,4 @@
-# Ignore everything by default
-*
-
-# But track these exceptions
-!.gitignore
-
-# Track all C# files in these directories (including subdirectories)
-!securitylibrary/**/*.cs
-!securitylibrary/**/*.cs
-
-# Optional: explicitly ignore common dotnet directories you don't want
-bin/
-obj/
+**/bin/
+**/obj/
 .vs/
-*.csproj
+**/*.csproj*
