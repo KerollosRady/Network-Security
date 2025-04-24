@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,12 +15,11 @@ namespace SecurityLibrary.AES
     public class AES : CryptographicTechnique
     {
         #region constants
-        readonly byte[] Rcon = {1, 2, 4, 8, 16, 32, 64, 128, 27, 54};
+        readonly byte[] Rcon = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36 };
         readonly byte[,] MixColMatrix = { {2, 3, 1, 1},
                                           {1, 2, 3, 1},
                                           {1, 1, 2, 3},
                                           {3, 1, 1, 2 }};
-
         readonly byte[,] InvMixColMatrix = {{0x0e, 0x0b, 0x0d, 0x09},
                                            {0x09, 0x0e, 0x0b, 0x0d},
                                            {0x0d, 0x09, 0x0e, 0x0b},
@@ -64,13 +64,15 @@ namespace SecurityLibrary.AES
 
         byte[,] Hexa2State(string hexa)
         {
+            if (hexa.Length != 34 || !hexa.StartsWith("0x"))
+                throw new ArgumentException("Invalid hex format.");
             byte[,] state = new byte[4,4];
             int idx = 2;
             for (int col = 0; col < 4; col++)
             {
                 for (int row = 0; row < 4; row++)
                 {
-                    state[col, row] = Convert.ToByte(""+hexa[idx]+hexa[idx+1], 16);
+                    state[row, col] = Convert.ToByte(""+hexa[idx]+hexa[idx+1], 16);
                     idx += 2;
                 }
             }
@@ -83,7 +85,7 @@ namespace SecurityLibrary.AES
             {   
                 for (int row = 0; row < 4; row++)
                 {
-                    hexa += state[col, row].ToString("x2");
+                    hexa += state[row, col].ToString("x2");
                 }
             }
             return hexa;
@@ -96,7 +98,7 @@ namespace SecurityLibrary.AES
                for(int j = 0; j < m; j++)
                 {
                     byte val = input[i, j];
-                    res[i,j] = box[val & 2, val & 1];
+                    res[i,j] = box[val>>4 & 0xf, val & 0xf];
                 }
             return res;
         }
@@ -111,43 +113,44 @@ namespace SecurityLibrary.AES
             }
             return res;
         }
-        byte MultiplyGF(byte a, byte b)
+        byte MultiplyGF(int a, int b)
         {
-            byte res = a;
-            bool b7 = ((a >> 7) & 1)!=0;
-            byte cnt = 0;
-            // 00011011 = 27;
-            for(byte bt = 1; bt < 8; bt++)
-                if ((b >> bt & 1) == 1)
-                {
-                    byte mul = a;
-                    mul <<= bt;
-                    cnt++;
-                    res ^= mul;
-                }
-            if (b7 && cnt % 2 == 1)
-                res ^= 27;
+            byte res = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                if ((b & 1) == 1)
+                    res ^= (byte)a;
+                bool carry = (a & 0x80) != 0;
+                a <<= 1;
+                if (carry)
+                    a ^= 0x1B;
+                b >>= 1;
+            }
             return res;
         }
-
         byte[,] MixColumns(byte[,] input, byte[,] matrix)
         {
             byte[,] result = new byte[4, 4];
             for (int i = 0; i < 4; i++)
+            {
                 for (int j = 0; j < 4; j++)
+                {
+                    result[i, j] = 0;
                     for (int k = 0; k < 4; k++)
-                        result[i, j] ^= MultiplyGF(input[i, k], matrix[k, j]);
-
+                        result[i, j] ^= MultiplyGF(matrix[i, k], input[k, j]);
+                }
+            }
             return result;
         }
-
         byte[,] AddRoundKey(byte[,] input, byte[,] key)
         {
             byte[,] result = new byte[4, 4];
             for (int i = 0; i < 4; i++)
                 for (int j = 0; j < 4; j++)
-                    result[i, j] = (byte) (input[i, j] ^ key[i, j]);
-
+                {
+                    result[i,j] = input[i, j];
+                    result[i,j] ^= key[i, j];
+                }
             return result;
         }
 
@@ -172,7 +175,6 @@ namespace SecurityLibrary.AES
                 // 3- XOR Rcon
                 prevCol[0, 0] ^= Rcon[ki - 1]; 
                 
-
                 for (int col = 0; col < 4; col++)
                 {
                     for (int row = 0; row < 4; row++)
@@ -187,14 +189,54 @@ namespace SecurityLibrary.AES
             return result;
         }
 
-        public override string Decrypt(string cipherText, string key)
+        public override string Decrypt(string cipherText, string cipherKey)
         {
-            throw new NotImplementedException();
+            byte[,] state = Hexa2State(cipherText);
+            byte[][,] key = KeySchedule(Hexa2State(cipherKey));
+            byte[] steps = { 0, 3 , 2 , 1 };
+            state = AddRoundKey(state, key[10]);
+            state = ShiftRows(state, steps);
+            state = SubBytes(state, InvSBox);
+            for(int i = 9; i >= 1; i--)
+            {
+                state = AddRoundKey(state, key[i]);
+                state = MixColumns(state, InvMixColMatrix);
+                state = ShiftRows(state, steps);
+                state = SubBytes(state, InvSBox);
+            }
+            state = AddRoundKey(state, key[0]);
+            return State2Hexa(state);
         }
-
-        public override string Encrypt(string plainText, string key)
+        void print(byte[,] state)
         {
-            throw new NotImplementedException();
+            for(int i=0; i < 4; i++)
+            {
+                for(int j=0;j <4;j++)
+                    Console.Write(state[i,j].ToString("x2")+" ");
+                Console.WriteLine();
+            }
+        }
+        public override string Encrypt(string plainText, string cipherKey)
+        {
+            byte[,] state = Hexa2State(plainText);
+            byte[][,] key = KeySchedule(Hexa2State(cipherKey));
+
+            state = AddRoundKey(state, key[0]);
+            byte[] steps = { 0, 1, 2, 3 };
+
+            for (int i = 1; i <= 9; i++)
+            {
+                state = SubBytes(state, SBox);
+                state = ShiftRows(state, steps);
+                state = MixColumns(state, MixColMatrix);
+                state = AddRoundKey(state, key[i]);
+            }
+
+            state = SubBytes(state, SBox);
+            state = ShiftRows(state, steps);
+            state = AddRoundKey(state, key[10]);
+
+            return State2Hexa(state);
         }
     }
 }
