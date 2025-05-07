@@ -23,7 +23,7 @@ namespace SecurityLibrary.RSA
             return PowMod(C, d, n);
         }
 
-        private int PowMod(long a, long exp, int mod)
+        public static int PowMod(long a, long exp, int mod)
         {
             long result = 1;
             a %= mod;
